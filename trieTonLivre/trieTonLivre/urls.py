@@ -20,5 +20,7 @@ urlpatterns = [
     path('', include('gateway.urls')),
     # path('request', views.request_book, name='request'),
     path("book/", include('book.urls')),
+    path('request', views.test_request),
+    path('request/regex', views.advanced_search),
     path('admin/', admin.site.urls),
 ]
