@@ -3,7 +3,7 @@ from django.db import models
 # Create your models here.
 class Book(models.Model):
     ids = models.AutoField(primary_key=True)
-    idGutendex = models.IntegerField()
+    idGutendex = models.IntegerField(unique=True)
     title = models.CharField(max_length=200)
     author = models.ManyToManyField('Author')
     summary = models.TextField()
@@ -19,3 +19,9 @@ class Author(models.Model):
     name = models.CharField(max_length=200)
     birth_date = models.DateField(null=True, blank=True)
     death_date = models.DateField(null=True, blank=True)
+class WordOccurrence(models.Model):
+    word = models.CharField(max_length=255)
+    count = models.PositiveIntegerField(default=1)
+    book = models.ForeignKey(Book,on_delete=models.CASCADE)
+    class Meta:
+        unique_together  = ("word","book")

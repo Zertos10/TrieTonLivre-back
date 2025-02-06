@@ -1,9 +1,14 @@
 from celery import shared_task
-from .models import Book, Author
+from .models import Book, Author, WordOccurrence
 import requests
-import json
 from django.conf import settings
 from django.utils.dateparse import parse_date
+from django.db import transaction
+import re
+import nltk
+from nltk.corpus import stopwords
+from collections import Counter
+from django.db.models import Count,Sum
 
 @shared_task
 def addBooks():
@@ -14,6 +19,7 @@ def addBooks():
         existing_book = Book.objects.filter(idGutendex=book["id"]).first()
         if not existing_book:
             addBook(book)
+        preProcessBook.delay(book)
 
 @shared_task
 def addBook(book_json):
@@ -38,16 +44,60 @@ def addBook(book_json):
         )
         book_instance.author.add(author)
 @shared_task
-def preProcessBook(bookId):
-    book = Book.objects.get(idGutendex=bookId)
+def preProcessBook(bookS):
+    book = Book.objects.filter(idGutendex=bookS.get("id")).first()
     if not book:
-        raise ""
-    file=requests.get(book.linkToBook)
+        raise ValueError("Book not found")
+    try: 
+        file = requests.get(book.linkToBook)
+    except requests.RequestException as e:
+        print(f"Error fetching book file: {e}")
+        return
     
-    
-    
-    pass
+    WordOccurrence.objects.filter(book=book).delete()
 
+    file= file.text
+    pattern = "r'^[a-zA-Z]'$"
+    tokenize_files =nltk.SpaceTokenizer().tokenize(file)
+    stop_words = set(stopwords.words("english"))
+    stop_words.update(stopwords.words("chinese"))
+    pattern = re.compile("^[a-zA-Z\']+$")
+    filter_file= [ word.lower() for word in tokenize_files if word.lower() not in stop_words and pattern.match(word)]
+    print("Nombre de mots filtrés :", len(filter_file))
+    words_counts = Counter(filter_file)
+    existing_word = WordOccurrence.objects.filter(book=book, word__in=words_counts.keys())
+    existing_dict = {w.word: w for w in existing_word}
+    new_entries= []
+    for word,count in words_counts.items():
+        if word in existing_dict:
+            existing_dict[word].count += count
+        else:
+            new_entries.append(WordOccurrence(book=book,word=word,count=count))
+    with transaction.atomic():
+        try :
+            WordOccurrence.objects.bulk_update(existing_dict.values(),['count'])
+            WordOccurrence.objects.bulk_create(new_entries)
+        except Exception as e:
+            print(e)
+            raise e
+    pass
+@shared_task
+def getBookBySearch(search):
+    nltk.download('punkt_tab')
+    token =nltk.SpaceTokenizer().tokenize(search)
+    token = [word.lower() for word in token]
+    bookSearch = (
+    Book.objects
+    .filter(wordoccurrence__word__in=token)  
+    .annotate(
+        matched_words=Count('wordoccurrence__word', distinct=True),  
+        total_word_count=Sum('wordoccurrence__count')  
+    )
+    .filter(matched_words=len(token)) 
+    .order_by('-total_word_count') 
+)
+    print(str(bookSearch.query))
+    return bookSearch
 @shared_task
 def downloadBook(bookId):
     pass
