@@ -23,5 +23,6 @@ class WordOccurrence(models.Model):
     word = models.CharField(max_length=255)
     count = models.PositiveIntegerField(default=1)
     book = models.ForeignKey(Book,on_delete=models.CASCADE)
+    weight = models.FloatField(default=0)
     class Meta:
         unique_together  = ("word","book")
