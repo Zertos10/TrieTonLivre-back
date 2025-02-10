@@ -13,10 +13,20 @@ def request_book(request):
 
 class BookViewSet(viewsets.ViewSet):
     renderer_classes = [JSONRenderer]
+
     def list(self, request):
         queryset = Book.objects.all()
-        serializer = BookShortSerializer(queryset,many=True)
+        serializer = BookShortSerializer(queryset, many=True)
         return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        try:
+            book = Book.objects.get(pk=pk)
+            serializer = BookSearchSerializer(book)
+            return Response(serializer.data)
+        except Book.DoesNotExist:
+            return Response({"error": "Book not found"}, status=404)
+
 class WordOccurency(viewsets.ViewSet):
     renderer_classes = [JSONRenderer]
     def list(self, request):
