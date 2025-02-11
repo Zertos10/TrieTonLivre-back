@@ -5,7 +5,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from .serializers import BookShortSerializer, WordOccurrenceSerializer,BookSearchSerializer
 from .models import Book, WordOccurrence
-from .tasks import addBooks,getBookBySearch,closeness_centrality
+from .tasks import addBooks,getBookBySearch
 # Create your views here.
 def request_book(request):
     addBooks.delay()
@@ -27,7 +27,7 @@ class WordOccurency(viewsets.ViewSet):
         search_words= request.query_params.get("word")
         
         print(search_words)
-        queryset = getBookBySearch(search_words,"word")
+        queryset = getBookBySearch(search_words)
         serializer = BookSearchSerializer(queryset,many=True)
         return Response(serializer.data)
 def getBook():
