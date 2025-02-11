@@ -9,10 +9,13 @@ class WordOccurrenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = WordOccurrence
         fields = '__all__'
-
+        
 class BookSearchSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+
     class Meta:
         model = Book
-        fields = ["ids",'idGutendex', 'title', 'cover','linkToBook', 'downloadCount', 'author']
-    def get_words(self, obj):
-        word_occurrences = WordOccurrence.objects.filter(book=obj)
+        fields = ["ids", "idGutendex", "title", "cover", "linkToBook", "downloadCount", "author"]
+
+    def get_author(self, obj):
+        return [author.name for author in obj.author.all()]
