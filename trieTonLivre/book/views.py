@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view
 from .serializers import BookShortSerializer, WordOccurrenceSerializer, BookSearchSerializer
 from .models import Book, WordOccurrence
 from .tasks import addBooks, getBookBySearch
+import Levenshtein
 
 
 # Proxy pour récupérer le contenu d'un livre et éviter les erreurs CORS
@@ -56,7 +57,6 @@ class BookViewSet(viewsets.ViewSet):
         except Book.DoesNotExist:
             return Response({"error": "Book not found"}, status=404)
 
-
 class WordOccurency(viewsets.ViewSet):
     renderer_classes = [JSONRenderer]
 
@@ -76,10 +76,3 @@ class WordOccurency(viewsets.ViewSet):
         result_page = paginator.paginate_queryset(queryset, request)
         serializer = BookSearchSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
-
-
-# Fonction de récupération des livres (non utilisée, peut être supprimée)
-def getBook():
-    books = Book.objects.all()
-    print(books)
-    return HttpResponse(books)
