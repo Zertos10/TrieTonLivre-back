@@ -3,9 +3,11 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+
+from .tasks.search_handler import getBookBySearch
+from .tasks.book_processing import addBooks
 from .serializers import BookShortSerializer, WordOccurrenceSerializer,BookSearchSerializer
 from .models import Book, WordOccurrence
-from .tasks import addBooks,getBookBySearch
 # Create your views here.
 def request_book(request):
     addBooks.delay()
