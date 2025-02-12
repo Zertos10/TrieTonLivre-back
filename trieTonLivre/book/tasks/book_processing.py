@@ -1,29 +1,38 @@
-from collections import defaultdict
 import logging
+import math
 import os
-from celery import shared_task
+from celery import shared_task,chord,group
 from django.conf import settings
-from networkx import Graph
-import networkx as nx
 import numpy as np
 import requests
 from django.db import transaction
+from pathlib import Path
 from sklearn.feature_extraction.text import TfidfVectorizer
 from django.utils.dateparse import parse_date
+
 
 
 from ..models import Author, Book, WordOccurrence
 from .utils import downloadBook
 
 logger = logging.getLogger(__name__)
-
 @shared_task
-def addBooks():
-    os.makedirs(os.path.join(settings.BASE_DIR, "books"), exist_ok=True)
-    url = settings.GUTENDEX_API + "/books?languages=en"
+def addBooks(nbBook:int=50,maxBookByPage=32):
+    project_root = Path(__file__).resolve().parent.parent.parent
+    os.makedirs(os.path.join(project_root, "books"), exist_ok=True)
+    pages=math.ceil(nbBook/maxBookByPage)
+    logger.debug(f'Pages {pages}')
+    parallel_books =group(getListBook.s(i) for i in range(pages))
+    workflow = chord(parallel_books)(index_table.s())
+    workflow.apply_async()
+    
+@shared_task
+def getListBook(iteration):
+    textFiles = dict()
+    logger.debug(f'Iteration : {iteration}')
+    url = settings.GUTENDEX_API + '/books?languages=en&page=' + str(iteration)
     response = requests.get(url)
     book_data = response.json()
-    textFiles = dict()
     for book in book_data.get("results", []):
         existing_book = Book.objects.filter(idGutendex=book["id"]).first()
         if not existing_book:
@@ -33,7 +42,7 @@ def addBooks():
         except Exception as e:
             logger.error(f"Error downloading book {existing_book.idGutendex}: {e}")
         logger.info(len(textFiles))
-    index_table(textFiles)
+    return textFiles
 @shared_task
 def addBook(book_json):
     book_instance, created = Book.objects.get_or_create(
@@ -57,7 +66,10 @@ def addBook(book_json):
         )
         book_instance.author.add(author)
     return book_instance
-def index_table(booksText:dict[int,str]) -> dict[str,float]:
+@shared_task
+def index_table(booksText:list[dict[int,str]]|dict[int,str]) -> dict[str,float]:
+    if isinstance(booksText, list):
+        booksText = {k: v for d in booksText for k, v in d.items()}
     vectorizer = TfidfVectorizer(stop_words='english')
     
     # Transformer les textes en matrice TF-IDF
