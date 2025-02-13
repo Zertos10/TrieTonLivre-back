@@ -3,7 +3,6 @@ from django.http import HttpResponse, JsonResponse
 from rest_framework import viewsets, pagination
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-
 from .tasks.search_handler import getBookBySearch
 from .tasks.book_processing import addBooks
 from .serializers import BookShortSerializer, WordOccurrenceSerializer,BookSearchSerializer
@@ -102,5 +101,15 @@ def request_book(request):
     addBooks.delay()
     return HttpResponse("Hello, World!")
 
+def suggest_words(request):
+    query = request.GET.get('q', '').lower()
+    if not query:
+        return JsonResponse({"suggestions": []})
 
+    words = WordOccurrence.objects.values_list('term', flat=True).distinct() 
 
+    words = [word for word in words if isinstance(word, str)]
+
+    suggestions = sorted(words, key=lambda word: Levenshtein.distance(query, word))[:5]
+
+    return JsonResponse({"suggestions": suggestions})
