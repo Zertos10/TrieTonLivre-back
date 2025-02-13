@@ -57,7 +57,6 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'trieTonLivre.urls'
