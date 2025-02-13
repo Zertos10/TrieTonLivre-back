@@ -9,7 +9,8 @@ class WordOccurrenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = WordOccurrence
         fields = '__all__'
-class AuthorSerializer(serializers.ModelSerializer)
+        
+class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
         fields = ['name']
