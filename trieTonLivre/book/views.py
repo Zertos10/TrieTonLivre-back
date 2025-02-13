@@ -11,6 +11,7 @@ from .models import Book, WordOccurrence
 # Create your views here.
 from rest_framework.decorators import api_view
 import Levenshtein
+import time
 
 
 # Proxy pour récupérer le contenu d'un livre et éviter les erreurs CORS
@@ -71,7 +72,12 @@ class WordOccurency(viewsets.ViewSet):
     def search(self, request):
         search_words = request.query_params.get("word")
         print("Mot recherché :", search_words)
-
+        start_time = time.time()
+        
+        queryset = getBookBySearch(search_words)
+        
+        execution_time = time.time() - start_time
+        print(f"Execution time: {execution_time} seconds")
         queryset = getBookBySearch(search_words)
         
         # Appliquer la pagination
