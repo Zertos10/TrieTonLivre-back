@@ -7,9 +7,11 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = ['name']
 
 class BookShortSerializer(serializers.ModelSerializer):
+    author = AuthorSerializer(many=True, read_only=True)
+
     class Meta:
         model = Book
-        fields = ['idGutendex', 'title', 'cover', 'linkToBook', 'downloadCount']
+        fields = ["ids", 'idGutendex', 'title', 'cover', 'linkToBook', 'downloadCount', 'author']
 
 class WordOccurrenceSerializer(serializers.ModelSerializer):
     class Meta:
