@@ -3,10 +3,13 @@ from django.http import HttpResponse, JsonResponse
 from rest_framework import viewsets, pagination
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from .serializers import BookShortSerializer, WordOccurrenceSerializer, BookSearchSerializer
+
+from .tasks.search_handler import getBookBySearch
+from .tasks.book_processing import addBooks
+from .serializers import BookShortSerializer, WordOccurrenceSerializer,BookSearchSerializer
 from .models import Book, WordOccurrence
-from .tasks import addBooks, getBookBySearch
+# Create your views here.
+from rest_framework.decorators import api_view
 import Levenshtein
 
 

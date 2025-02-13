@@ -20,9 +20,10 @@ class Author(models.Model):
     birth_date = models.DateField(null=True, blank=True)
     death_date = models.DateField(null=True, blank=True)
 class WordOccurrence(models.Model):
-    word = models.CharField(max_length=255)
+    term = models.CharField(max_length=255)
     count = models.PositiveIntegerField(default=1)
     book = models.ForeignKey(Book,on_delete=models.CASCADE)
-    weight = models.FloatField(default=0)
+    tfidf_weight = models.FloatField(null=True, blank=True)
+    term_frequency = models.FloatField(default=0)
     class Meta:
-        unique_together  = ("word","book")
+        unique_together  = ("term","book")
