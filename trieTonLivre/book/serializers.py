@@ -1,21 +1,24 @@
 from rest_framework import serializers
-from .models import Book, WordOccurrence
+from .models import Book, Author, WordOccurrence
+
+class AuthorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Author
+        fields = ['name']
 
 class BookShortSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
-        fields = ['idGutendex', 'title', 'cover','linkToBook', 'downloadCount']
+        fields = ['idGutendex', 'title', 'cover', 'linkToBook', 'downloadCount']
+
 class WordOccurrenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = WordOccurrence
         fields = '__all__'
         
 class BookSearchSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
+    author = AuthorSerializer(many=True, read_only=True)
 
     class Meta:
         model = Book
-        fields = ["ids", "idGutendex", "title", "cover", "linkToBook", "downloadCount", "author"]
-
-    def get_author(self, obj):
-        return [author.name for author in obj.author.all()]
+        fields = ["ids", 'idGutendex', 'title', 'cover', 'linkToBook', 'downloadCount', 'author']
