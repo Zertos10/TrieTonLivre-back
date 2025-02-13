@@ -22,9 +22,8 @@ def addBooks(nbBook:int=50,maxBookByPage=32):
     os.makedirs(os.path.join(project_root, "books"), exist_ok=True)
     pages=math.ceil(nbBook/maxBookByPage)
     logger.debug(f'Pages {pages}')
-    parallel_books =group(getListBook.s(i) for i in range(pages))
+    parallel_books =group(getListBook.s(i+1) for i in range(pages))
     workflow = chord(parallel_books)(index_table.s())
-    workflow.apply_async()
     
 @shared_task
 def getListBook(iteration):
