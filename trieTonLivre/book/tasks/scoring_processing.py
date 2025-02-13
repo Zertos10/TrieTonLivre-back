@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 from django.db.models import Q
 
-from trieTonLivre.trieTonLivre import settings
 from ..models import WordOccurrence
+from .graph_manager import save_graph,load_graph 
 from sklearn.metrics.pairwise import cosine_similarity
 import logging
 logger = logging.getLogger(__name__)
@@ -73,17 +73,38 @@ def documentsClosenessCentrality(
     ):
     cosine = cosine_similaritys(bookIds)
     logger.info(f'cosine: {cosine}')
-    documentGraph.add_nodes_from(bookIds)
-    for i in range(len(bookIds)):
-        for j in range(i + 1, len(bookIds)):
-            if i < cosine.shape[0] and j < cosine.shape[1]:
-                cos_sim = cosine[i, j]
-                print(f'i: {i}, j: {j}')
-                print(f'cos_sim: {cos_sim}')
-                documentGraph.add_edge(bookIds[i], bookIds[j], weight=cos_sim)
+    
 
-    print(nx.is_connected(documentGraph))
-    centrality = nx.closeness_centrality(documentGraph,distance="weight")
-    nx.write_graphml(documentGraph, f'{settings.BASE_DIR}/documentGraph.graphml')
+    save_graph(documentGraph)
     
     return centrality.items()
+
+def extract_tf_idf_from_database(book_ids:list[int]):
+    index_entries =WordOccurrence.objects.filter(Q(book_ids__in=book_ids))
+    
+    book_tfidf = defaultdict(dict)
+    for entry in index_entries:
+        book_tfidf[entry.book.ids][entry.term] = entry.tfidf_weight
+    all_terms = sorted(set(term for terms in book_tfidf.values() for term in terms))
+    
+    book_ids = sorted(book_tfidf.keys())
+    
+    tfidf_matrix = np.zeros((len(book_ids),len(all_terms)))
+    for i, book_id in enumerate(book_ids):
+        for j,term in enumerate(all_terms):
+            tfidf_matrix[i,j] = book_tfidf[book_id].get(term,0)
+    return tfidf_matrix,all_terms
+def calculate_cosine_similarity(tfidf_matrix):
+    return cosine_similarity(tfidf_matrix)
+def build_document_graph(book_ids:list[int],similarity_matrix : np.ndarray,thresold = 0.2):
+    documentGraph = nx.Graph()
+    documentGraph.add_nodes_from(book_ids)
+    for i in range(len(book_ids)):
+        for j in range(i + 1, len(book_ids)):
+            cos_sim = similarity_matrix[i, j]
+            print(f'i: {i}, j: {j}')
+            print(f'cos_sim: {cos_sim}')
+            documentGraph.add_edge(book_ids[i], book_ids[j], weight=cos_sim)
+    return documentGraph
+def analyze_graph(documentGraph: nx.Graph):
+    centrality = nx.closeness_centrality(documentGraph,distance="weight")

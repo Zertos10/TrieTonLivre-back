@@ -12,6 +12,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from django.utils.dateparse import parse_date
 import time
 from .scoring_processing import documentsClosenessCentrality
+from .graph_manager import get_graph
 
 
 
@@ -141,8 +142,11 @@ def index_table(booksText:list[dict[int,str]]|dict[int,str]) -> dict[str,float]:
 def scoring_processing(results):
     startTime = time.time()
     bookId = Book.objects.all().values_list('ids', flat=True)
-    nxGraph = nx.Graph()
-    scores =documentsClosenessCentrality(bookId,nxGraph)
+    
+    nxGraph = get_graph()
+    if nxGraph == None:
+        nxGraph = nx.Graph()
+        scores =documentsClosenessCentrality(bookId,nxGraph)
     logger.debug(f'Scores : {scores}')
     Book.objects.bulk_update([Book(ids=book_id, score=score) for book_id, score in scores], ['score'])
     timeElapsed = time.time() - startTime
