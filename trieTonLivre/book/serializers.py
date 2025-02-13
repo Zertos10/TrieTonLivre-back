@@ -15,10 +15,10 @@ class WordOccurrenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = WordOccurrence
         fields = '__all__'
-
+        
 class BookSearchSerializer(serializers.ModelSerializer):
-    authors = AuthorSerializer(many=True, read_only=True)
+    author = AuthorSerializer(many=True, read_only=True)
 
     class Meta:
         model = Book
-        fields = ["ids", 'idGutendex', 'title', 'cover', 'linkToBook', 'downloadCount', 'authors']
+        fields = ["ids", 'idGutendex', 'title', 'cover', 'linkToBook', 'downloadCount', 'author']
