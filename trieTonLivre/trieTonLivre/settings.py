@@ -96,9 +96,6 @@ DATABASES = {
         'OPTIONS': {
             'timeout': 40,
         }
-        'OPTIONS': {
-            'timeout': 40,
-        }
     }
 }
 REST_FRAMEWORK = {
