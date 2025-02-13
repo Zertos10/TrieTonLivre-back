@@ -5,27 +5,33 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from django.db.models import Q
+
+from trieTonLivre.trieTonLivre import settings
 from ..models import WordOccurrence
 from sklearn.metrics.pairwise import cosine_similarity
 import logging
 logger = logging.getLogger(__name__)
-def cosine_similaritys(book_ids: list[int]):
-    index_entries = WordOccurrence.objects.filter(Q(book__ids__in=book_ids))
-    logging.info(f'index_entries: {index_entries}')
-    book_tfidf = defaultdict(dict)
+def cosine_similaritys(book_ids: list[int]| np.ndarray):
+    if isinstance(book_ids, list[int]):
+        logger.info(f'book_ids: {book_ids}')
+        index_entries = WordOccurrence.objects.filter(Q(book__ids__in=book_ids))
+        logging.info(f'index_entries: {index_entries}')
+        book_tfidf = defaultdict(dict)
 
-    for entry in index_entries:
-        book_tfidf[entry.book.ids][entry.term] = entry.tfidf_weight
+        for entry in index_entries:
+            book_tfidf[entry.book.ids][entry.term] = entry.tfidf_weight
 
-    all_terms = sorted(set(term for terms in book_tfidf.values() for term in terms))
+        all_terms = sorted(set(term for terms in book_tfidf.values() for term in terms))
     
-    book_ids = sorted(book_tfidf.keys())  # Tri des ID des livres
-    tfidf_matrix = np.zeros((len(book_ids), len(all_terms)))
+        book_ids = sorted(book_tfidf.keys())  # Tri des ID des livres
+        tfidf_matrix = np.zeros((len(book_ids), len(all_terms)))
 
-    for i, book_id in enumerate(book_ids):
-        for j, term in enumerate(all_terms):
-            tfidf_matrix[i, j] = book_tfidf[book_id].get(term, 0)
-    logging.info(f'tfidf_matrix: {tfidf_matrix}')
+        for i, book_id in enumerate(book_ids):
+            for j, term in enumerate(all_terms):
+                tfidf_matrix[i, j] = book_tfidf[book_id].get(term, 0)
+        logging.info(f'tfidf_matrix: {tfidf_matrix}')
+    else:
+        tfidf_matrix = book_ids
     similarity_matrix = cosine_similarity(tfidf_matrix)
 
     return similarity_matrix
@@ -78,5 +84,6 @@ def documentsClosenessCentrality(
 
     print(nx.is_connected(documentGraph))
     centrality = nx.closeness_centrality(documentGraph,distance="weight")
+    nx.write_graphml(documentGraph, f'{settings.BASE_DIR}/documentGraph.graphml')
     
     return centrality.items()
