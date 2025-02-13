@@ -12,6 +12,7 @@ class Book(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     linkToBook = models.URLField(max_length=200)
     downloadCount = models.IntegerField(default=0)
+    score = models.FloatField(default=0)
 
 
 class Author(models.Model):

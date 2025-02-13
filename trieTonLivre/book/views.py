@@ -3,7 +3,6 @@ from django.http import HttpResponse, JsonResponse
 from rest_framework import viewsets, pagination
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-
 from .tasks.search_handler import getBookBySearch
 from .tasks.book_processing import addBooks
 from .serializers import BookShortSerializer, WordOccurrenceSerializer,BookSearchSerializer
@@ -11,6 +10,7 @@ from .models import Book, WordOccurrence
 # Create your views here.
 from rest_framework.decorators import api_view
 import Levenshtein
+import time
 
 
 # Proxy pour récupérer le contenu d'un livre et éviter les erreurs CORS
@@ -71,7 +71,12 @@ class WordOccurency(viewsets.ViewSet):
     def search(self, request):
         search_words = request.query_params.get("word")
         print("Mot recherché :", search_words)
-
+        start_time = time.time()
+        
+        queryset = getBookBySearch(search_words)
+        
+        execution_time = time.time() - start_time
+        print(f"Execution time: {execution_time} seconds")
         queryset = getBookBySearch(search_words)
         
         # Appliquer la pagination
@@ -102,5 +107,15 @@ def request_book(request):
     addBooks.delay()
     return HttpResponse("Hello, World!")
 
+def suggest_words(request):
+    query = request.GET.get('q', '').lower()
+    if not query:
+        return JsonResponse({"suggestions": []})
 
+    words = WordOccurrence.objects.values_list('term', flat=True).distinct() 
 
+    words = [word for word in words if isinstance(word, str)]
+
+    suggestions = sorted(words, key=lambda word: Levenshtein.distance(query, word))[:5]
+
+    return JsonResponse({"suggestions": suggestions})

@@ -4,27 +4,28 @@ from networkx import Graph
 import networkx as nx
 import numpy as np
 import pandas as pd
+from django.db.models import Q
 from ..models import WordOccurrence
 from sklearn.metrics.pairwise import cosine_similarity
-
-
+import logging
+logger = logging.getLogger(__name__)
 def cosine_similaritys(book_ids: list[int]):
-    index_entries = WordOccurrence.objects.filter(book__ids__in=book_ids)
-
+    index_entries = WordOccurrence.objects.filter(Q(book__ids__in=book_ids))
+    logging.info(f'index_entries: {index_entries}')
     book_tfidf = defaultdict(dict)
 
     for entry in index_entries:
         book_tfidf[entry.book.ids][entry.term] = entry.tfidf_weight
 
     all_terms = sorted(set(term for terms in book_tfidf.values() for term in terms))
-
+    
     book_ids = sorted(book_tfidf.keys())  # Tri des ID des livres
     tfidf_matrix = np.zeros((len(book_ids), len(all_terms)))
 
     for i, book_id in enumerate(book_ids):
         for j, term in enumerate(all_terms):
-            tfidf_matrix[i, j] = book_tfidf[book_id].get(term, 0) 
-
+            tfidf_matrix[i, j] = book_tfidf[book_id].get(term, 0)
+    logging.info(f'tfidf_matrix: {tfidf_matrix}')
     similarity_matrix = cosine_similarity(tfidf_matrix)
 
     return similarity_matrix
@@ -65,16 +66,17 @@ def documentsClosenessCentrality(
     documentGraph:Graph,
     ):
     cosine = cosine_similaritys(bookIds)
-
+    logger.info(f'cosine: {cosine}')
     documentGraph.add_nodes_from(bookIds)
     for i in range(len(bookIds)):
-        for j in range(i +1,len(bookIds)):
-            cos_sim = cosine[i, j]
-            print(f'i :{i} j: {j}')
-            print(f'cos_sim: {cos_sim}')
-            documentGraph.add_edge(bookIds[i], bookIds[j], weight=cos_sim)
+        for j in range(i + 1, len(bookIds)):
+            if i < cosine.shape[0] and j < cosine.shape[1]:
+                cos_sim = cosine[i, j]
+                print(f'i: {i}, j: {j}')
+                print(f'cos_sim: {cos_sim}')
+                documentGraph.add_edge(bookIds[i], bookIds[j], weight=cos_sim)
 
     print(nx.is_connected(documentGraph))
     centrality = nx.closeness_centrality(documentGraph,distance="weight")
     
-    return  sorted(centrality.items(), key=lambda item: item[1], reverse=True)
+    return centrality.items()
