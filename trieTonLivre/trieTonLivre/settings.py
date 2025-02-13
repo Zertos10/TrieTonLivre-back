@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
-    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -59,10 +58,6 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     'corsheaders.middleware.CorsMiddleware',
-]
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
 ]
 
 ROOT_URLCONF = 'trieTonLivre.urls'
@@ -103,12 +98,6 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ),
 }
-REST_FRAMEWORK = {
-    'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',
-    ),
-}
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
